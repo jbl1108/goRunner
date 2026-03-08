@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Kør kun på tags, der starter med 'v'
+
+jobs:
+  build-and-test:
+    uses: ./.github/workflows/build_and_test.yml  # Kalder den genanvendelige workflow
+
+  release:
+    needs: build-and-test  # Vent på, at build-and-test-jobbet er færdigt
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Build binary for release
+        run: go build -v -o goRunner_linux_x64 goRunner.go
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "goRunner_linux_x64"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generateReleaseNotes: true
+          name: Release ${{ github.ref_name }}
+          body: |
+            ### Changes in this Release
+            - New features
+            - Bug fixes
+          draft: false
+          prerelease: false
