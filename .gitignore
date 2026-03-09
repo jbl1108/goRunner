@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-github.com/jbl1108/goSecret
+goRunner
 
 # Test binary, built with `go test -c`
 *.test
