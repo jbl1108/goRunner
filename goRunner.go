@@ -12,8 +12,9 @@ func main() {
 		}
 	}()
 	// Start the MQTT client (this will block)
-	app.MQTTClient.Connect()
-	defer app.MQTTClient.Disconnect()
+	app.OutputPublisher.Connect()
+	defer app.OutputPublisher.Disconnect()
+	app.SynchronizeTrainingsUseCase.SynchronizeTrainings()
 
 	// Block forever
 	select {}

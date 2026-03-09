@@ -50,12 +50,6 @@ func (config *Config) MQTTPassword() string {
 func (config *Config) KeyValueDBURL() string {
 	return sanitize(config.prop.GetString("keyvaluedb_url", "http://localhost:8086"))
 }
-func (config *Config) KeyValueUser() string {
-	return sanitize(config.prop.GetString("keyvaluedb_user", "my-user"))
-}
-func (config *Config) KeyValuePassword() string {
-	return sanitize(config.prop.GetString("keyvaluedb_password", "my-password"))
-}
 func (config *Config) RestAddress() string {
 	return sanitize(config.prop.GetString("rest_address", ":8081"))
 }

@@ -1,30 +1,40 @@
 package config
 
 import (
-	"github.com/jbl1108/github.com/jbl1108/goSecret/delivery"
-	"github.com/jbl1108/github.com/jbl1108/goSecret/repositories"
-	"github.com/jbl1108/github.com/jbl1108/goSecret/usecases"
-	"github.com/jbl1108/github.com/jbl1108/goSecret/usecases/ports/output"
+	"github.com/jbl1108/goRunner/delivery"
+	"github.com/jbl1108/goRunner/services"
+	"github.com/jbl1108/goRunner/usecases"
+	"github.com/jbl1108/goRunner/usecases/datamodel"
+	"github.com/jbl1108/goRunner/usecases/ports/output"
 )
 
 type Application struct {
-	outputPort             output.KeyValueStorage
-	MQTTClient             *delivery.MQTTClient
-	RestService            *delivery.KeyValueRestService
-	storeTimeSeriesUseCase *usecases.KeyValueHandling
+	OutputPublisher             output.TrainingPublisher
+	TrainingSynchronize         output.TrainingSynchronize
+	trainingDatamodel           datamodel.TrainingList
+	RestService                 *delivery.TrainingRestService
+	handleTrainingUseCase       *usecases.HandleTrainingUseCase
+	SynchronizeTrainingsUseCase *usecases.SynchronizeTrainingsUseCase
 }
 
 func NewApplication() Application {
 	c := NewConfig()
-	op := repositories.NewValkeyRepository(c.KeyValueUser(), c.KeyValuePassword(), c.KeyValueDBURL())
-	su := usecases.NewKeyValueHandling(op)
-	sd := delivery.NewKeyValueRestService(c.RestAddress(), su)
-	mqttClient := delivery.NewMQTTClient(c.MQTTAddress(), c.MQTTUsername(), c.MQTTPassword(), "keyvalue/#", su)
+	outputPublisher := delivery.NewMQTTClient(c.MQTTAddress(), c.MQTTUsername(), c.MQTTPassword(), "trainings")
+	trainingDatamodel := datamodel.NewTrainingList()
+	trainingSynchronize := services.NewKeyValueRepository(c.KeyValueDBURL())
+	synchronizeTrainingsUseCase := usecases.NewSynchronizeTrainingsUseCase(trainingSynchronize, *trainingDatamodel)
+
+	handleTrainingUseCase := usecases.NewHandleTrainingUseCase(outputPublisher, *trainingDatamodel)
+
+	restService := delivery.NewTrainingRestService(c.RestAddress(), handleTrainingUseCase) // Will set usecase later to avoid circular dependency
 
 	return Application{
-		outputPort:             op,
-		storeTimeSeriesUseCase: su,
-		MQTTClient:             mqttClient,
-		RestService:            sd,
+		OutputPublisher:             outputPublisher,
+		TrainingSynchronize:         trainingSynchronize,
+		trainingDatamodel:           *trainingDatamodel,
+		RestService:                 restService,
+		handleTrainingUseCase:       handleTrainingUseCase,
+		SynchronizeTrainingsUseCase: synchronizeTrainingsUseCase,
 	}
+
 }

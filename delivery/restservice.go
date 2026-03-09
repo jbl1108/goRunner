@@ -1,79 +1,112 @@
 package delivery
 
 import (
-	"io"
+	"encoding/json"
 	"log"
 	"net/http"
 
-	"github.com/jbl1108/github.com/jbl1108/goSecret/usecases/datamodel"
-	"github.com/jbl1108/github.com/jbl1108/goSecret/usecases/ports/input"
+	"github.com/jbl1108/goRunner/usecases/datamodel"
+	"github.com/jbl1108/goRunner/usecases/ports/input"
 )
 
-type KeyValueRestService struct {
-	keyValueHandlingUsecase input.KeyValInputPort
+type TrainingRestService struct {
+	trainingHandlingUsecase input.TrainingInputPort
 	address                 string
 }
 
-func NewKeyValueRestService(address string, keyValueHandlingUsecase input.KeyValInputPort) *KeyValueRestService {
-	return &KeyValueRestService{keyValueHandlingUsecase: keyValueHandlingUsecase, address: address}
+func NewTrainingRestService(address string, trainingHandlingUsecase input.TrainingInputPort) *TrainingRestService {
+	return &TrainingRestService{trainingHandlingUsecase: trainingHandlingUsecase, address: address}
 }
 
-func (s *KeyValueRestService) Start() error {
+func (s *TrainingRestService) Start() error {
 	mux := http.NewServeMux()
-	log.Printf("Starting Key Value REST Service on %s", s.address)
+	log.Printf("Starting Training REST Service on %s", s.address)
 	s.RegisterRoutes(mux)
 	return http.ListenAndServe(s.address, mux)
 }
 
-func (s *KeyValueRestService) handleGetKey(w http.ResponseWriter, r *http.Request) {
-	result, err := s.keyValueHandlingUsecase.GetKey(r.PathValue("topic") + ":" + r.PathValue("key"))
+func (s *TrainingRestService) handleGetTraining(w http.ResponseWriter, r *http.Request) {
+	uid := r.PathValue("uid")
+	training, err := s.trainingHandlingUsecase.GetTraining(uid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(result)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(training)
+
 }
 
-func (s *KeyValueRestService) handleSetKey(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+func (s *TrainingRestService) handleGetAllTrainings(w http.ResponseWriter, r *http.Request) {
+	trainings, err := s.trainingHandlingUsecase.GetAllTrainings()
 	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer r.Body.Close()
-	log.Printf("Url %v", r.URL)
-	if r.PathValue("topic") == "" || r.PathValue("key") == "" {
-		http.Error(w, "Missing topic or key in URL", http.StatusBadRequest)
-		return
-	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(trainings)
+}
 
-	message := datamodel.Message{
-		Topic: r.PathValue("topic"),
-		Data: datamodel.KeyValue{
-			Key:   r.PathValue("key"),
-			Value: string(body),
-		},
+func (s *TrainingRestService) handlePostTraining(w http.ResponseWriter, r *http.Request) {
+	var training datamodel.Training
+	err := json.NewDecoder(r.Body).Decode(&training)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
-	err = s.keyValueHandlingUsecase.SetKey(message)
+	err = s.trainingHandlingUsecase.AddTraining(training)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(training)
 }
 
-func (s *KeyValueRestService) RegisterRoutes(mux *http.ServeMux) {
+func (s *TrainingRestService) handlePutTraining(w http.ResponseWriter, r *http.Request) {
+	var training datamodel.Training
+	err := json.NewDecoder(r.Body).Decode(&training)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	err = s.trainingHandlingUsecase.UpdateTraining(training)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(training)
+}
+
+func (s *TrainingRestService) handleDeleteTraining(w http.ResponseWriter, r *http.Request) {
+	uid := r.PathValue("uid")
+	err := s.trainingHandlingUsecase.DeleteTraining(uid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *TrainingRestService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Welcome to the KeyValue REST Service"))
-		w.Write([]byte("Use one of the following endpoints"))
-		w.Write([]byte("\nGET /key/{topic}/{key} - Retrieve a key value by key"))
-		w.Write([]byte("\nPOST /key/{topic}/{key} - Set a key value by key"))
+		w.Write([]byte("Welcome to the Runner REST Service"))
+		w.Write([]byte("\nUse one of the following endpoints"))
 		w.Write([]byte("\n/health/ - Health check endpoint"))
+		w.Write([]byte("\nGET /training/{uid} - Retrieve a training by UID"))
+		w.Write([]byte("\nPOST /training/ - Create a new training"))
+		w.Write([]byte("\nPUT /training/{uid} - Update an existing training"))
+		w.Write([]byte("\nDELETE /training/{uid} - Delete a training"))
+		w.Write([]byte("\nGET /training - Retrieve all trainings"))
+
 	})
-	mux.HandleFunc("GET /key/{topic}/{key}", s.handleGetKey)
-	mux.HandleFunc("POST /key/{topic}/{key}", s.handleSetKey)
+	mux.HandleFunc("GET /training/{uid}", s.handleGetTraining)
+	mux.HandleFunc("POST /training/", s.handlePostTraining)
+	mux.HandleFunc("PUT /training/{uid}", s.handlePutTraining)
+	mux.HandleFunc("DELETE /training/{uid}", s.handleDeleteTraining)
+	mux.HandleFunc("GET /training", s.handleGetAllTrainings)
 	mux.HandleFunc("/health/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
