@@ -107,19 +107,19 @@ func TestHandleTrainingUseCase_AddTraining(t *testing.T) {
 
 	usecase := NewHandleTrainingUseCase(mockPub, *trainingList)
 
-	training := datamodel.Training{Uid: "new-uid", Week: 1, Dayofweek: 1, Activity: "run", Done: false}
+	training := datamodel.Training{Week: 1, Dayofweek: 1, Activity: "run", Done: false}
 
-	err := usecase.AddTraining(training)
+	addedTraining, err := usecase.AddTraining(training)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 
 	// Check that training was added to the model
-	retrieved, err := trainingList.GetTrainingByUid("new-uid")
+	retrieved, err := trainingList.GetTrainingByUid(addedTraining.Uid)
 	if err != nil {
 		t.Errorf("training was not added to model: %v", err)
 	}
-	if retrieved.Uid != "new-uid" {
+	if retrieved.Uid != addedTraining.Uid {
 		t.Error("wrong training added to model")
 	}
 
@@ -127,7 +127,7 @@ func TestHandleTrainingUseCase_AddTraining(t *testing.T) {
 	if len(mockPub.added) != 1 {
 		t.Errorf("expected 1 added call, got %d", len(mockPub.added))
 	}
-	if mockPub.added[0].Uid != "new-uid" {
+	if mockPub.added[0].Uid != addedTraining.Uid {
 		t.Error("wrong training passed to publisher")
 	}
 }
@@ -143,7 +143,7 @@ func TestHandleTrainingUseCase_UpdateTraining(t *testing.T) {
 
 	updated := datamodel.Training{Uid: "test-uid", Week: 1, Dayofweek: 1, Activity: "jog", Done: true}
 
-	err := usecase.UpdateTraining(updated)
+	_, err := usecase.UpdateTraining(updated)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
