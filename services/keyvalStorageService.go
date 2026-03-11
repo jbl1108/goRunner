@@ -7,18 +7,18 @@ import (
 	"github.com/jbl1108/goRunner/usecases/datamodel"
 )
 
-type KeyValueRepository struct {
+type KeyValueStorageService struct {
 	requestUrl string
 }
 
-func NewKeyValueRepository(requestUrl string) *KeyValueRepository {
-	return &KeyValueRepository{
+func NewKeyValueRepository(requestUrl string) *KeyValueStorageService {
+	return &KeyValueStorageService{
 		requestUrl: requestUrl,
 	}
 }
 
-func (r *KeyValueRepository) GetAllTrainings() ([]datamodel.Training, error) {
-	response, err := http.Get(r.requestUrl)
+func (k *KeyValueStorageService) GetAllTrainings() ([]datamodel.Training, error) {
+	response, err := http.Get(k.requestUrl)
 	if err != nil {
 		return nil, err
 	}

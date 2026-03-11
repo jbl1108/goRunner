@@ -5,7 +5,7 @@ import "github.com/jbl1108/goRunner/usecases/datamodel"
 type TrainingInputPort interface {
 
 	/* AddTraining adds a training to the system */
-	AddTraining(training datamodel.Training) error
+	AddTraining(training datamodel.Training) (datamodel.Training, error)
 
 	/* GetTraining retrieves a training by its UID */
 	GetTraining(uid string) (datamodel.Training, error)
@@ -14,7 +14,7 @@ type TrainingInputPort interface {
 	GetAllTrainings() ([]datamodel.Training, error)
 
 	/* UpdateTraining updates an existing training */
-	UpdateTraining(training datamodel.Training) error
+	UpdateTraining(training datamodel.Training) (datamodel.Training, error)
 
 	/* DeleteTraining removes a training by its UID */
 	DeleteTraining(uid string) error

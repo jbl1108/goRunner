@@ -7,23 +7,22 @@ import (
 
 type SynchronizeTrainingsUseCase struct {
 	trainingSynchronize output.TrainingSynchronize
-	trainingDatamodel   datamodel.TrainingList
 }
 
 func NewSynchronizeTrainingsUseCase(trainingSynchronize output.TrainingSynchronize, trainingDatamodel datamodel.TrainingList) *SynchronizeTrainingsUseCase {
 	return &SynchronizeTrainingsUseCase{
 		trainingSynchronize: trainingSynchronize,
-		trainingDatamodel:   trainingDatamodel,
 	}
 }
 
-func (u *SynchronizeTrainingsUseCase) SynchronizeTrainings() error {
+func (u *SynchronizeTrainingsUseCase) SynchronizeTrainings() (datamodel.TrainingList, error) {
 	trainings, err := u.trainingSynchronize.GetAllTrainings()
 	if err != nil {
-		return err
+		return datamodel.TrainingList{}, err
 	}
+	trainingDatamodel := datamodel.NewTrainingList()
 	for _, training := range trainings {
-		u.trainingDatamodel.AddTraining(training)
+		trainingDatamodel.AddTraining(training)
 	}
-	return nil
+	return *trainingDatamodel, nil
 }

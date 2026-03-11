@@ -1,6 +1,10 @@
 package usecases
 
 import (
+	"fmt"
+	"log"
+
+	"github.com/google/uuid"
 	"github.com/jbl1108/goRunner/usecases/datamodel"
 	"github.com/jbl1108/goRunner/usecases/ports/output"
 )
@@ -25,22 +29,32 @@ func (h *HandleTrainingUseCase) GetTraining(uid string) (datamodel.Training, err
 	return h.trainingModel.GetTrainingByUid(uid)
 }
 
-func (h *HandleTrainingUseCase) AddTraining(training datamodel.Training) error {
+func (h *HandleTrainingUseCase) AddTraining(training datamodel.Training) (datamodel.Training, error) {
+	if h.trainingModel.Exists(training.Uid) {
+		return h.UpdateTraining(training)
+	}
+	log.Printf("Adding training: %v", training)
+
+	training.Uid = uuid.New().String()
 	h.trainingModel.AddTraining(training)
 	err := h.outputPublisher.TrainingAdded(training)
+
 	if err != nil {
-		return err
+		return datamodel.Training{}, err
 	}
-	return nil
+	return training, nil
 }
 
-func (h *HandleTrainingUseCase) UpdateTraining(training datamodel.Training) error {
+func (h *HandleTrainingUseCase) UpdateTraining(training datamodel.Training) (datamodel.Training, error) {
+	if !h.trainingModel.Exists(training.Uid) {
+		return datamodel.Training{}, fmt.Errorf("training with uid %s not found", training.Uid)
+	}
 	h.trainingModel.UpdateTraining(training)
 	err := h.outputPublisher.TrainingUpdated(training)
 	if err != nil {
-		return err
+		return datamodel.Training{}, err
 	}
-	return nil
+	return training, nil
 }
 
 func (h *HandleTrainingUseCase) DeleteTraining(uid string) error {

@@ -54,3 +54,8 @@ func (t *TrainingList) DeleteTraining(uid string) error {
 	}
 	return fmt.Errorf("training with uid %s not found", uid)
 }
+
+func (t *TrainingList) Exists(uid string) bool {
+	_, exists := t.trainings[uid]
+	return exists
+}

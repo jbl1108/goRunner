@@ -54,13 +54,13 @@ func (s *TrainingRestService) handlePostTraining(w http.ResponseWriter, r *http.
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	err = s.trainingHandlingUsecase.AddTraining(training)
+	addedTraining, err := s.trainingHandlingUsecase.AddTraining(training)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(training)
+	json.NewEncoder(w).Encode(addedTraining)
 }
 
 func (s *TrainingRestService) handlePutTraining(w http.ResponseWriter, r *http.Request) {
@@ -70,13 +70,14 @@ func (s *TrainingRestService) handlePutTraining(w http.ResponseWriter, r *http.R
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	err = s.trainingHandlingUsecase.UpdateTraining(training)
+	training.Uid = r.PathValue("uid")
+	updatedTraining, err := s.trainingHandlingUsecase.UpdateTraining(training)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(training)
+	json.NewEncoder(w).Encode(updatedTraining)
 }
 
 func (s *TrainingRestService) handleDeleteTraining(w http.ResponseWriter, r *http.Request) {
@@ -96,14 +97,14 @@ func (s *TrainingRestService) RegisterRoutes(mux *http.ServeMux) {
 		w.Write([]byte("\nUse one of the following endpoints"))
 		w.Write([]byte("\n/health/ - Health check endpoint"))
 		w.Write([]byte("\nGET /training/{uid} - Retrieve a training by UID"))
-		w.Write([]byte("\nPOST /training/ - Create a new training"))
+		w.Write([]byte("\nPOST /training - Create a new training"))
 		w.Write([]byte("\nPUT /training/{uid} - Update an existing training"))
 		w.Write([]byte("\nDELETE /training/{uid} - Delete a training"))
 		w.Write([]byte("\nGET /training - Retrieve all trainings"))
 
 	})
 	mux.HandleFunc("GET /training/{uid}", s.handleGetTraining)
-	mux.HandleFunc("POST /training/", s.handlePostTraining)
+	mux.HandleFunc("POST /training", s.handlePostTraining)
 	mux.HandleFunc("PUT /training/{uid}", s.handlePutTraining)
 	mux.HandleFunc("DELETE /training/{uid}", s.handleDeleteTraining)
 	mux.HandleFunc("GET /training", s.handleGetAllTrainings)

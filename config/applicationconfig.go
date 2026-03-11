@@ -17,14 +17,17 @@ type Application struct {
 	SynchronizeTrainingsUseCase *usecases.SynchronizeTrainingsUseCase
 }
 
-func NewApplication() Application {
+func NewApplication() (Application, error) {
 	c := NewConfig()
 	outputPublisher := delivery.NewMQTTClient(c.MQTTAddress(), c.MQTTUsername(), c.MQTTPassword(), "trainings")
 	trainingDatamodel := datamodel.NewTrainingList()
 	trainingSynchronize := services.NewKeyValueRepository(c.KeyValueDBURL())
 	synchronizeTrainingsUseCase := usecases.NewSynchronizeTrainingsUseCase(trainingSynchronize, *trainingDatamodel)
-
-	handleTrainingUseCase := usecases.NewHandleTrainingUseCase(outputPublisher, *trainingDatamodel)
+	datamodel, err := synchronizeTrainingsUseCase.SynchronizeTrainings()
+	if err != nil {
+		return Application{}, err
+	}
+	handleTrainingUseCase := usecases.NewHandleTrainingUseCase(outputPublisher, datamodel)
 
 	restService := delivery.NewTrainingRestService(c.RestAddress(), handleTrainingUseCase) // Will set usecase later to avoid circular dependency
 
@@ -35,6 +38,6 @@ func NewApplication() Application {
 		RestService:                 restService,
 		handleTrainingUseCase:       handleTrainingUseCase,
 		SynchronizeTrainingsUseCase: synchronizeTrainingsUseCase,
-	}
+	}, nil
 
 }
