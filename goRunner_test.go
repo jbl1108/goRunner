@@ -189,9 +189,10 @@ func TestNewApplication(t *testing.T) {
 		defer resp.Body.Close()
 
 		var responseTrainings []datamodel.Training
-		err = json.NewDecoder(resp.Body).Decode(&responseTrainings)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		err = json.Unmarshal(bodyBytes, &responseTrainings)
+		log.Printf("Response body: %s", string(bodyBytes))
 		if err != nil {
-			bodyBytes, _ := io.ReadAll(resp.Body)
 			t.Fatalf("Failed to decode response: %v, body: %s", err, string(bodyBytes))
 		}
 		log.Printf("Last response trainings: %v", mockOutputPublisher.lastTraining)

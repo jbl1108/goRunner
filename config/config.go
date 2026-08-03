@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 	"strings"
 
 	"github.com/magiconair/properties"
@@ -12,21 +11,23 @@ type Config struct {
 	prop *properties.Properties
 }
 
-const CONFIG_FILE = "config.conf"
+const CONFIG_FILE = "config.properties"
 
 func NewConfig() *Config {
 	c := new(Config)
-
-	dir, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	configPath := dir + "/" + CONFIG_FILE
+	var err error
+	configPath := "/gosecret/config/" + CONFIG_FILE
 	log.Printf("Loading config file from %s", configPath)
+
 	c.prop, err = properties.LoadFile(configPath, properties.UTF8)
 	if err != nil {
 		log.Printf("Failed to load config file: %v. Using default values.", err)
 		c.prop = properties.NewProperties()
+	}
+	log.Printf("Using the following configuration:")
+	for _, key := range c.prop.Keys() {
+		value, _ := c.prop.Get(key)
+		log.Printf("%s = %s", key, value)
 	}
 
 	return c
@@ -48,8 +49,8 @@ func (config *Config) MQTTPassword() string {
 }
 
 func (config *Config) KeyValueDBURL() string {
-	return sanitize(config.prop.GetString("keyvaluedb_url", "http://localhost:8086"))
+	return sanitize(config.prop.GetString("gokeyvaluestore_url", "http://localhost:9091"))
 }
 func (config *Config) RestAddress() string {
-	return sanitize(config.prop.GetString("rest_address", ":8081"))
+	return sanitize(config.prop.GetString("own_rest_address", ":9092"))
 }
