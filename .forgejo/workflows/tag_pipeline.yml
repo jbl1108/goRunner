@@ -1,0 +1,34 @@
+on:
+  push:
+    tags:
+      - 'v*.*'
+
+jobs:
+  docker-build:
+    runs-on: docker
+    
+    steps: 
+      - uses: actions/checkout@v4
+      - run: |
+          URL=${{ forgejo.server_url }}
+          CLEAN_URL="${URL#http://}"
+          REPO_LOWER=$(echo "$CLEAN_URL/${{ forgejo.repository }}" | tr '[:upper:]' '[:lower:]')
+          TAG_NAME="${{ forgejo.ref_name }}"
+
+          docker login $CLEAN_URL -pvalencia -ujacob
+          docker build -t "$REPO_LOWER:$TAG_NAME" -t "$REPO_LOWER:latest" .
+          docker push "$REPO_LOWER" --all-tags
+    
+      - name: Create Release    
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ forgejo.token }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tag_name": "'"${{ forgejo.ref_name }}"'",
+              "name": "'"${{ forgejo.ref_name }}"'",
+              "body": "Automated release for '"${{ forgejo.ref_name }}"'",
+              "draft": false,
+              "prerelease": false
+            }' \
+            "${{ forgejo.api_url }}/repos/${{ forgejo.repository }}/releases"

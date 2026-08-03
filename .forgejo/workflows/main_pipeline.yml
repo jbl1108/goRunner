@@ -1,0 +1,14 @@
+name: Build, Test, and Push Docker Image on Tag
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    uses: ./.forgejo/workflows/build_and_test.yml
+      
+  integration-test:
+    needs: [build]
+    uses: ./.forgejo/workflows/build_and_integration_test.yml
+

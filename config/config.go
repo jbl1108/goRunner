@@ -16,7 +16,7 @@ const CONFIG_FILE = "config.properties"
 func NewConfig() *Config {
 	c := new(Config)
 	var err error
-	configPath := "/gosecret/config/" + CONFIG_FILE
+	configPath := "/gorunner/config/" + CONFIG_FILE
 	log.Printf("Loading config file from %s", configPath)
 
 	c.prop, err = properties.LoadFile(configPath, properties.UTF8)
